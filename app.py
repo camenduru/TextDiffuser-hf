@@ -248,7 +248,7 @@ def parse_args():
     parser.add_argument(
         "--font_path", 
         type=str, 
-        default='assets/font/Arial.ttf', 
+        default='Arial.ttf', 
         help="The path of font for visualization."
     )
     parser.add_argument(
