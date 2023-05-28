@@ -11,4 +11,4 @@ termcolor==2.3.0
 tinydb
 flask
 torchvision
--e git+https://github.com/JingyeChen/diffusers
+-e git+https://github.com/JingyeChen/diffusers.git#egg=diffusers
