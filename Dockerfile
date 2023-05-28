@@ -9,8 +9,10 @@ COPY ./requirements.txt /app
 
 # Install any needed packages specified in requirements.txt
 
-RUN python3 -m pip install --upgrade pip
-RUN python3 -m pip install --upgrade Pillow
+RUN apt-get install libjpeg-dev zlib1g-dev 
+RUN pip install setuptools==59.0.1
+RUN pip install --upgrade pip
+RUN pip install --upgrade Pillow
 
 RUN pip install -r /app/requirements.txt
 RUN pip install torch==1.13.1 --no-dependencies
