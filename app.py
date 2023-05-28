@@ -62,7 +62,6 @@ from util import segmentation_mask_visualization, make_caption_pil, combine_imag
 from model.layout_generator import get_layout_from_prompt
 from model.text_segmenter.unet import UNet
 
-import torchsnooper
 
 disable_caching()
 check_min_version("0.15.0.dev0")
