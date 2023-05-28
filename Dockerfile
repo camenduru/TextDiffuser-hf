@@ -14,6 +14,8 @@ COPY ./requirements.txt /app
 RUN apt-get install cmake libtiff5-dev libjpeg8-dev libopenjp2-7-dev zlib1g-dev libfreetype6-dev liblcms2-dev libwebp-dev tcl8.6-dev tk8.6-dev python3-tk libharfbuzz-dev libfribidi-dev libxcb1-dev
 
 RUN wget https://layoutlm.blob.core.windows.net/textdiffuser/textdiffuser-ckpt.zip
+RUN echo finish downloading
+RUN ls -a
 RUN unzip textdiffuser-ckpt.zip
 
 RUN pip install -r /app/requirements.txt
