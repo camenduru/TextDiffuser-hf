@@ -9,10 +9,8 @@ COPY ./requirements.txt /app
 
 # Install any needed packages specified in requirements.txt
 
-RUN apk --update add libxml2-dev libxslt-dev libffi-dev gcc musl-dev libgcc openssl-dev curl
-RUN apk add jpeg-dev zlib-dev freetype-dev lcms2-dev openjpeg-dev tiff-dev tk-dev tcl-dev
-RUN pip install Pillow
-
+RUN python3 -m pip install --upgrade pip
+RUN python3 -m pip install --upgrade Pillow
 
 RUN pip install -r /app/requirements.txt
 RUN pip install torch==1.13.1 --no-dependencies
