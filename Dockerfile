@@ -10,7 +10,6 @@ COPY ./requirements.txt /app
 # Install any needed packages specified in requirements.txt
 RUN pip install -r /app/requirements.txt
 RUN pip install torch==1.13.1 --no-dependencies
-RUN pip install torchvision==0.2.1 --no-dependencies
 RUN git clone https://github.com/huggingface/diffusers
 RUN cp ./assets/files/scheduling_ddpm.py ./diffusers/src/diffusers/schedulers/scheduling_ddpm.py
 RUN cp ./assets/files/unet_2d_condition.py ./diffusers/src/diffusers/models/unet_2d_condition.py
