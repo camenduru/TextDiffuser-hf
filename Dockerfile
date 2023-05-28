@@ -13,7 +13,8 @@ RUN apt-get install zlib1g-dev
 
 
 RUN pip install -r /app/requirements.txt
-RUN pip install torch==1.13.1 --no-dependencies
+RUN pip install https://download.pytorch.org/whl/Pillow-9.3.0-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+RUN pip install https://download.pytorch.org/whl/cu113/torch-1.12.1%2Bcu113-cp38-cp38-linux_x86_64.whl
 
 # Define environment variable
 ENV NAME gradio
