@@ -8,6 +8,9 @@ WORKDIR /app
 COPY ./requirements.txt /app
 
 # Install any needed packages specified in requirements.txt
+
+RUN apt-get install libjpeg-dev zlib1g-dev
+
 RUN pip install -r /app/requirements.txt
 RUN pip install torch==1.13.1 --no-dependencies
 
