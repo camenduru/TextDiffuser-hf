@@ -10,4 +10,4 @@ triton==2.0.0.post1
 termcolor==2.3.0
 tinydb
 flask
-torchvision==0.2.1
+torchvision==0.9.0
