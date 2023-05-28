@@ -10,4 +10,5 @@ triton==2.0.0.post1
 termcolor==2.3.0
 tinydb
 flask
+zipfile
 -e git+https://github.com/JingyeChen/diffusers.git#egg=diffusers
