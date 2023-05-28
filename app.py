@@ -11,7 +11,7 @@ import zipfile
 
 
 os.system('wget https://layoutlm.blob.core.windows.net/textdiffuser/textdiffuser-ckpt.zip')
-
+os.system('wget https://layoutlm.blob.core.windows.net/textdiffuser/Arial.ttf')
 # 打开 zip 文件
 with zipfile.ZipFile('textdiffuser-ckpt.zip', 'r') as zip_ref:
     zip_ref.extractall('.')
