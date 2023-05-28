@@ -28,7 +28,6 @@ from datasets import disable_caching
 import torch
 import torch.utils.checkpoint
 import torch.nn.functional as F
-from torchvision import transforms
 
 import accelerate
 from accelerate import Accelerator
