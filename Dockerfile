@@ -7,9 +7,11 @@ WORKDIR /app
 # Copy the current directory contents into the container at /app
 COPY ./requirements.txt /app
 
-# Install any needed packages specified in requirements.txt
-RUN apt-get install libjpeg-dev
-RUN apt-get install zlib1g-dev
+# # Install any needed packages specified in requirements.txt
+# RUN apt-get install libjpeg-dev
+# RUN apt-get install zlib1g-dev
+
+RUN apt-get install cmake libtiff5-dev libjpeg8-dev libopenjp2-7-dev zlib1g-dev libfreetype6-dev liblcms2-dev libwebp-dev tcl8.6-dev tk8.6-dev python3-tk libharfbuzz-dev libfribidi-dev libxcb1-dev
 
 
 RUN pip install -r /app/requirements.txt
