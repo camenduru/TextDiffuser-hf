@@ -17,5 +17,5 @@ ENV NAME gradio
 EXPOSE 7860
 
 # Run main.py when the container launches
-CMD ["python", "text-to-image-app.py"]
+CMD ["python", "app.py"]
 ~                            
