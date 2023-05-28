@@ -8,9 +8,11 @@
 
 import os
 
+os.system('apt-get install zip unzip')
 os.system('wget https://layoutlm.blob.core.windows.net/textdiffuser/textdiffuser-ckpt.zip')
 os.system('unzip textdiffuser-ckpt.zip')
-os.system('finish')
+os.system('echo finish')
+os.system('ls -a')
 
 
 import cv2
