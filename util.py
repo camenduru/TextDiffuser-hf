@@ -120,35 +120,28 @@ def combine_image(args, sub_output_dir: str, pred_image_list: List, image_pil: I
         caption_pil_list (List): List of captions.
     """
     
-    # # create a "latest" folder to store the results 
-    # if os.path.exists(f'{args.output_dir}/latest'):
-    #     shutil.rmtree(f'{args.output_dir}/latest')
-    # os.mkdir(f'{args.output_dir}/latest')
+    size = len(pred_image_list)
     
-    # save each predicted image
-    # os.makedirs(f'{args.output_dir}/{sub_output_dir}', exist_ok=True)
-    for index, img in enumerate(pred_image_list):
-        img.save(f'{args.output_dir}/{sub_output_dir}/{index}.jpg')
-        # img.save(f'{args.output_dir}/latest/{index}.jpg')
-        
-    length = len(pred_image_list)
-    lines = math.ceil(length / 3)
+    if size == 1:
+        return pred_image_list[0]
+    elif size == 2:
+        blank = Image.new('RGB', (512*2, 512), (0,0,0))
+        blank.paste(pred_image_list[0],(0,0))
+        blank.paste(pred_image_list[1],(512,0))
+    elif size == 3:
+        blank = Image.new('RGB', (512*3, 512), (0,0,0))
+        blank.paste(pred_image_list[0],(0,0))
+        blank.paste(pred_image_list[1],(512,0))
+        blank.paste(pred_image_list[2],(1024,0))
+    elif size == 4:
+        blank = Image.new('RGB', (512*2, 512*2), (0,0,0))
+        blank.paste(pred_image_list[0],(0,0))
+        blank.paste(pred_image_list[1],(512,0))
+        blank.paste(pred_image_list[2],(0,512))
+        blank.paste(pred_image_list[3],(512,512))
+
     
-    blank = Image.new('RGB', (512*3, 512*(lines+1)+48*lines), (0,0,0)) 
-    blank.paste(image_pil,(0,0))
-    blank.paste(character_mask_pil,(512,0))
-    blank.paste(character_mask_highlight_pil,(512*2,0))
-    
-    for i in range(length):
-        row, col = i // 3, i % 3
-        blank.paste(pred_image_list[i],(512*col,512*(row+1)+48*row))
-        blank.paste(caption_pil_list[i],(512*col,512*(row+1)+48*row+512))
-    
-    blank.save(f'{args.output_dir}/{sub_output_dir}/combine.jpg')
-    # blank.save(f'{args.output_dir}/latest/combine.jpg')
-    
-    return blank.convert('RGB')
-    
+    return blank
     
 def get_width(font_path, text):
     """

@@ -307,8 +307,7 @@ def get_full_repo_name(model_id: str, organization: Optional[str] = None, token:
 args = parse_args()
 # args.prompt = prompt # 在这里修改prompt
 # If passed along, set the training seed now.
-seed = args.seed if args.seed is not None else random.randint(0, 1000000)
-set_seed(seed)
+
 print(f'{colored("[√]", "green")} Seed is set to {seed}.')
 
 logging_dir = os.path.join(args.output_dir, args.logging_dir)
@@ -420,16 +419,16 @@ if version.parse(accelerate.__version__) >= version.parse("0.16.0"):
 
 # setup schedulers                    
 scheduler = DDPMScheduler.from_pretrained(args.pretrained_model_name_or_path, subfolder="scheduler") 
-scheduler.set_timesteps(args.sample_steps) 
-sample_num = args.vis_num
+# sample_num = args.vis_num
 
-# @torchsnooper.snoop()
-def main(prompt):
-    
+def text_to_image(prompt,slider_step,slider_batch,slider_seed):
+
     args.prompt = prompt # 在这里修改prompt
+    sample_num = slider_batch
     # If passed along, set the training seed now.
-    seed = args.seed if args.seed is not None else random.randint(0, 1000000)
+    seed = slider_seed
     set_seed(seed)
+    scheduler.set_timesteps(slider_step) 
 
     noise = torch.randn((sample_num, 4, 64, 64)).to("cuda")  # (b, 4, 64, 64)
     input = noise # (b, 4, 64, 64)
@@ -462,15 +461,8 @@ def main(prompt):
     if args.mode == 'text-to-image':    
         render_image, segmentation_mask_from_pillow = get_layout_from_prompt(args)
         
-        if args.use_pillow_segmentation_mask:
-            segmentation_mask = torch.Tensor(np.array(segmentation_mask_from_pillow)).cuda() # (512, 512)
-        else:
-            to_tensor = transforms.ToTensor()
-            image_tensor = to_tensor(render_image).unsqueeze(0).cuda().sub_(0.5).div_(0.5)  
-            with torch.no_grad():
-                segmentation_mask = segmenter(image_tensor)
-            segmentation_mask = segmentation_mask.max(1)[1].squeeze(0)
-            
+        segmentation_mask = torch.Tensor(np.array(segmentation_mask_from_pillow)).cuda() # (512, 512)
+    
         segmentation_mask = filter_segmentation_mask(segmentation_mask)
         segmentation_mask = torch.nn.functional.interpolate(segmentation_mask.unsqueeze(0).unsqueeze(0).float(), size=(256, 256), mode='nearest')
         segmentation_mask = segmentation_mask.squeeze(1).repeat(sample_num, 1, 1).long().to('cuda') # (1, 1, 256, 256)
@@ -514,20 +506,65 @@ def main(prompt):
         pred_image_list.append(image)
         
     os.makedirs(f'{args.output_dir}/{sub_output_dir}', exist_ok=True)
-        
-    # save additional info
-    if args.mode == 'text-to-image':
-        image_pil.save(os.path.join(args.output_dir, sub_output_dir, 'render_text_image.png'))
-        enhancer = ImageEnhance.Brightness(segmentation_mask_from_pillow)
-        im_brightness = enhancer.enhance(5)
-        im_brightness.save(os.path.join(args.output_dir, sub_output_dir, 'segmentation_mask_from_pillow.png'))
+    
+    image_pil.save(os.path.join(args.output_dir, sub_output_dir, 'render_text_image.png'))
+    enhancer = ImageEnhance.Brightness(segmentation_mask_from_pillow)
+    im_brightness = enhancer.enhance(5)
+    im_brightness.save(os.path.join(args.output_dir, sub_output_dir, 'segmentation_mask_from_pillow.png'))
 
     # 之后得把这个函数返回的image返回了
     blank_pil = combine_image(args, sub_output_dir, pred_image_list, image_pil, character_mask_pil, character_mask_highlight_pil, caption_pil)
     return blank_pil
 
 
-if __name__ == "__main__":
-    import gradio as gr
-    demo = gr.Interface(main, "text", "image")
-    demo.launch()
+# if __name__ == "__main__":
+#     import gradio as gr
+#     demo = gr.Interface(main, "text", "image")
+#     demo.launch()
+    
+    
+import gradio as gr
+    
+with gr.Blocks() as demo:
+    gr.Markdown("TextDiffuser.")
+    with gr.Tab("Text-to-Image"):
+        with gr.Row():
+            with gr.Column(scale=1):
+                prompt = gr.Textbox(label='Input your prompt here. Please enclose keywords with single quotes.')
+                slider_step = gr.Slider(minimum=1, maximum=1000, value=50, label="Sample Step", info="The sampling step for TextDiffuser ranging from [1,1000].")
+                slider_batch = gr.Slider(minimum=1, maximum=4, value=2, label="Sample Size", info="Number of samples generated from TextDiffuser.")
+                slider_seed = gr.Slider(minimum=1, maximum=10000, label="Seed", info="The random seed for sampling.", randomize=True)
+                button = gr.Button("Generate")
+            with gr.Column(scale=1):
+                output = gr.Image()
+        button.click(text_to_image, inputs=[prompt,slider_step,slider_batch,slider_seed], outputs=output)
+        
+    # with gr.Tab("Text-to-Image-with-Template"):
+    #     with gr.Row():
+    #         with gr.Column(scale=1):
+    #             text_input = gr.Textbox(label='Input your prompt here.')
+    #             template_image = gr.Image(label='Template image')
+    #             slider_step = gr.Slider(minimum=1, maximum=1000, value=50, label="Sample Step", info="The sampling step for TextDiffuser ranging from [1,1000].")
+    #             slider_batch = gr.Slider(minimum=1, maximum=4, value=2, label="Sample Size", info="Number of samples generated from TextDiffuser.")
+    #             slider_seed = gr.Slider(minimum=1, maximum=10000, label="Seed", info="The random seed for sampling.", randomize=True)
+    #             button = gr.Button("Generate")
+    #         with gr.Column(scale=1):
+    #             output = gr.Image()
+    #     button.click(flip_text, inputs=text_input, outputs=output)
+        
+    # with gr.Tab("Text-Inpainting"):
+    #     with gr.Row():
+    #         with gr.Column(scale=1):
+    #             text_input = gr.Textbox(label='Input your prompt here.')
+    #             with gr.Row():
+    #                 orig_image = gr.Image(label='Original image')
+    #                 mask_image = gr.Image(label='Mask image')
+    #             slider_step = gr.Slider(minimum=1, maximum=1000, value=50, label="Sample Step", info="The sampling step for TextDiffuser ranging from [1,1000].")
+    #             slider_batch = gr.Slider(minimum=1, maximum=4, value=2, label="Sample Size", info="Number of samples generated from TextDiffuser.")
+    #             slider_seed = gr.Slider(minimum=1, maximum=10000, label="Seed", info="The random seed for sampling.", randomize=True)
+    #             button = gr.Button("Generate")
+    #         with gr.Column(scale=1):
+    #             output = gr.Image()
+    #     button.click(flip_text, inputs=text_input, outputs=output)
+
+demo.launch()
