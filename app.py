@@ -668,7 +668,7 @@ def text_inpainting(prompt, orig_image,mask_image, slider_step,slider_batch,slid
     segmentation_mask = filter_segmentation_mask(segmentation_mask)
     segmentation_mask = torch.nn.functional.interpolate(segmentation_mask.unsqueeze(0).unsqueeze(0).float(), size=(256, 256), mode='nearest')
 
-    image_mask = transform_mask(text_mask)
+    image_mask = transform_mask_pil(text_mask)
     image_mask = torch.from_numpy(image_mask).cuda().unsqueeze(0).unsqueeze(0) 
 
     image = orig_image.convert('RGB').resize((512,512))
