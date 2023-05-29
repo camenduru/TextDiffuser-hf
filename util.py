@@ -25,6 +25,24 @@ for index, c in enumerate(alphabet):
     alphabet_dic[c] = index + 1 # the index 0 stands for non-character
     
 
+
+def transform_mask_pil(mask_root):
+    """
+    This function extracts the mask area and text area from the images.
+    
+    Args:
+        mask_root (str): The path of mask image.
+            * The white area is the unmasked area
+            * The gray area is the masked area
+            * The white area is the text area
+    """
+    img = np.array(mask_root)
+    img = cv2.resize(img, (512, 512), interpolation=cv2.INTER_NEAREST)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    ret, binary = cv2.threshold(gray, 250, 255, cv2.THRESH_BINARY) # pixel value is set to 0 or 255 according to the threshold
+    return 1 - (binary.astype(np.float32) / 255) 
+
+
 def transform_mask(mask_root: str):
     """
     This function extracts the mask area and text area from the images.
