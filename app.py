@@ -546,7 +546,7 @@ def text_to_image_with_template(prompt, template_image, slider_step,slider_batch
     print(f'{colored("[√]", "green")} Text segmenter is successfully loaded.')
 
     #### text-to-image-with-template ####
-    template_image = Image.open(args.template_image).resize((256,256)).convert('RGB')
+    template_image = template_image.resize((256,256)).convert('RGB')
     
     # whether binarization is needed
     print(f'{colored("[Warning]", "red")} args.binarization is set to {args.binarization}. You may need it when using handwritten images as templates.')
