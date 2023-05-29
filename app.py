@@ -649,7 +649,7 @@ with gr.Blocks() as demo:
         with gr.Row():
             with gr.Column(scale=1):
                 prompt = gr.Textbox(label='Input your prompt here.')
-                template_image = gr.Image(label='Template image')
+                template_image = gr.Image(label='Template image', type="pil")
                 slider_step = gr.Slider(minimum=1, maximum=1000, value=50, label="Sample Step", info="The sampling step for TextDiffuser ranging from [1,1000].")
                 slider_batch = gr.Slider(minimum=1, maximum=4, value=2, step=1, label="Sample Size", info="Number of samples generated from TextDiffuser.")
                 slider_seed = gr.Slider(minimum=1, maximum=10000, label="Seed", info="The random seed for sampling.", randomize=True)
