@@ -458,23 +458,21 @@ def text_to_image(prompt,slider_step,slider_batch,slider_seed):
     print(f'{colored("[√]", "green")} Text segmenter is successfully loaded.')
 
     #### text-to-image ####
-    if args.mode == 'text-to-image':    
-        render_image, segmentation_mask_from_pillow = get_layout_from_prompt(args)
-        
-        segmentation_mask = torch.Tensor(np.array(segmentation_mask_from_pillow)).cuda() # (512, 512)
+    render_image, segmentation_mask_from_pillow = get_layout_from_prompt(args)
     
-        segmentation_mask = filter_segmentation_mask(segmentation_mask)
-        segmentation_mask = torch.nn.functional.interpolate(segmentation_mask.unsqueeze(0).unsqueeze(0).float(), size=(256, 256), mode='nearest')
-        segmentation_mask = segmentation_mask.squeeze(1).repeat(sample_num, 1, 1).long().to('cuda') # (1, 1, 256, 256)
-        print(f'{colored("[√]", "green")} character-level segmentation_mask: {segmentation_mask.shape}.')
-        
-        feature_mask = torch.ones(sample_num, 1, 64, 64).to('cuda') # (b, 1, 64, 64)
-        masked_image = torch.zeros(sample_num, 3, 512, 512).to('cuda') # (b, 3, 512, 512)
-        masked_feature = vae.encode(masked_image).latent_dist.sample() # (b, 4, 64, 64)
-        masked_feature = masked_feature * vae.config.scaling_factor 
-        print(f'{colored("[√]", "green")} feature_mask: {feature_mask.shape}.')
-        print(f'{colored("[√]", "green")} masked_feature: {masked_feature.shape}.')
+    segmentation_mask = torch.Tensor(np.array(segmentation_mask_from_pillow)).cuda() # (512, 512)
 
+    segmentation_mask = filter_segmentation_mask(segmentation_mask)
+    segmentation_mask = torch.nn.functional.interpolate(segmentation_mask.unsqueeze(0).unsqueeze(0).float(), size=(256, 256), mode='nearest')
+    segmentation_mask = segmentation_mask.squeeze(1).repeat(sample_num, 1, 1).long().to('cuda') # (1, 1, 256, 256)
+    print(f'{colored("[√]", "green")} character-level segmentation_mask: {segmentation_mask.shape}.')
+    
+    feature_mask = torch.ones(sample_num, 1, 64, 64).to('cuda') # (b, 1, 64, 64)
+    masked_image = torch.zeros(sample_num, 3, 512, 512).to('cuda') # (b, 3, 512, 512)
+    masked_feature = vae.encode(masked_image).latent_dist.sample() # (b, 4, 64, 64)
+    masked_feature = masked_feature * vae.config.scaling_factor 
+    print(f'{colored("[√]", "green")} feature_mask: {feature_mask.shape}.')
+    print(f'{colored("[√]", "green")} masked_feature: {masked_feature.shape}.')
 
     # diffusion process
     intermediate_images = []
@@ -505,14 +503,122 @@ def text_to_image(prompt,slider_step,slider_batch,slider_seed):
         image = Image.fromarray((image * 255).round().astype("uint8")).convert('RGB')
         pred_image_list.append(image)
         
-    # os.makedirs(f'{args.output_dir}/{sub_output_dir}', exist_ok=True)
-    
-    # image_pil.save(os.path.join(args.output_dir, sub_output_dir, 'render_text_image.png'))
-    # enhancer = ImageEnhance.Brightness(segmentation_mask_from_pillow)
-    # im_brightness = enhancer.enhance(5)
-    # im_brightness.save(os.path.join(args.output_dir, sub_output_dir, 'segmentation_mask_from_pillow.png'))
+    blank_pil = combine_image(args, None, pred_image_list, image_pil, character_mask_pil, character_mask_highlight_pil, caption_pil)
+    return blank_pil
 
-    # 之后得把这个函数返回的image返回了
+
+
+
+def text_to_image_with_template(prompt, template_image, slider_step,slider_batch,slider_seed):
+
+    args.prompt = prompt # 在这里修改prompt
+    sample_num = slider_batch
+    # If passed along, set the training seed now.
+    seed = slider_seed
+    set_seed(seed)
+    scheduler.set_timesteps(slider_step) 
+
+    noise = torch.randn((sample_num, 4, 64, 64)).to("cuda")  # (b, 4, 64, 64)
+    input = noise # (b, 4, 64, 64)
+
+    captions = [args.prompt] * sample_num
+    captions_nocond = [""] * sample_num
+    print(f'{colored("[√]", "green")} Prompt is loaded: {args.prompt}.')
+    
+    # encode text prompts
+    inputs = tokenizer(
+        captions, max_length=tokenizer.model_max_length, padding="max_length", truncation=True, return_tensors="pt"
+    ).input_ids # (b, 77)
+    encoder_hidden_states = text_encoder(inputs)[0].cuda() # (b, 77, 768)
+    print(f'{colored("[√]", "green")} encoder_hidden_states: {encoder_hidden_states.shape}.')
+
+    inputs_nocond = tokenizer(
+        captions_nocond, max_length=tokenizer.model_max_length, padding="max_length", truncation=True, return_tensors="pt"
+    ).input_ids # (b, 77)
+    encoder_hidden_states_nocond = text_encoder(inputs_nocond)[0].cuda() # (b, 77, 768)
+    print(f'{colored("[√]", "green")} encoder_hidden_states_nocond: {encoder_hidden_states_nocond.shape}.')
+
+    # load character-level segmenter
+    segmenter = UNet(3, 96, True).cuda()
+    segmenter = torch.nn.DataParallel(segmenter)
+    segmenter.load_state_dict(torch.load(args.character_segmenter_path))
+    segmenter.eval()
+    print(f'{colored("[√]", "green")} Text segmenter is successfully loaded.')
+
+    #### text-to-image-with-template ####
+    template_image = Image.open(args.template_image).resize((256,256)).convert('RGB')
+    
+    # whether binarization is needed
+    print(f'{colored("[Warning]", "red")} args.binarization is set to {args.binarization}. You may need it when using handwritten images as templates.')
+    if args.binarization:
+        gray = ImageOps.grayscale(template_image)
+        binary = gray.point(lambda x: 255 if x > 96 else 0, '1')
+        template_image = binary.convert('RGB')
+        
+            
+    def to_tensor(image):
+        if isinstance(image, Image.Image):  # 如果是 PIL.Image.Image 类型
+            image = np.array(image)
+        elif not isinstance(image, np.ndarray):  # 如果不是 numpy.ndarray 类型
+            raise TypeError("输入图像必须是 PIL.Image.Image 或 numpy.ndarray 类型")
+
+        # 将图像的数据类型转换为 float32，并将其归一化到 [0, 1] 范围
+        image = image.astype(np.float32) / 255.0
+
+        # 转换图像的形状：(height, width, channels) -> (channels, height, width)
+        image = np.transpose(image, (2, 0, 1))
+
+        # 将 numpy 数组转换为 PyTorch 张量
+        tensor = torch.from_numpy(image)
+
+        return tensor
+        
+    # to_tensor = transforms.ToTensor()
+    image_tensor = to_tensor(template_image).unsqueeze(0).cuda().sub_(0.5).div_(0.5) # (b, 3, 256, 256)
+            
+    with torch.no_grad():
+        segmentation_mask = segmenter(image_tensor) # (b, 96, 256, 256)
+    segmentation_mask = segmentation_mask.max(1)[1].squeeze(0) # (256, 256)
+    segmentation_mask = filter_segmentation_mask(segmentation_mask) # (256, 256)
+    
+    segmentation_mask = torch.nn.functional.interpolate(segmentation_mask.unsqueeze(0).unsqueeze(0).float(), size=(256, 256), mode='nearest') # (b, 1, 256, 256)
+    segmentation_mask = segmentation_mask.squeeze(1).repeat(sample_num, 1, 1).long().to('cuda') # (b, 1, 256, 256)
+    print(f'{colored("[√]", "green")} Character-level segmentation_mask: {segmentation_mask.shape}.')
+    
+    feature_mask = torch.ones(sample_num, 1, 64, 64).to('cuda') # (b, 1, 64, 64)
+    masked_image = torch.zeros(sample_num, 3, 512, 512).to('cuda') # (b, 3, 512, 512)
+    masked_feature = vae.encode(masked_image).latent_dist.sample() # (b, 4, 64, 64)
+    masked_feature = masked_feature * vae.config.scaling_factor # (b, 4, 64, 64)
+
+    # diffusion process
+    intermediate_images = []
+    for t in tqdm(scheduler.timesteps):
+        with torch.no_grad():
+            noise_pred_cond = unet(sample=input, timestep=t, encoder_hidden_states=encoder_hidden_states, segmentation_mask=segmentation_mask, feature_mask=feature_mask, masked_feature=masked_feature).sample # b, 4, 64, 64
+            noise_pred_uncond = unet(sample=input, timestep=t, encoder_hidden_states=encoder_hidden_states_nocond, segmentation_mask=segmentation_mask, feature_mask=feature_mask, masked_feature=masked_feature).sample # b, 4, 64, 64
+            noisy_residual = noise_pred_uncond + args.classifier_free_scale * (noise_pred_cond - noise_pred_uncond) # b, 4, 64, 64     
+            prev_noisy_sample = scheduler.step(noisy_residual, t, input).prev_sample 
+            input = prev_noisy_sample
+            intermediate_images.append(prev_noisy_sample)
+            
+    # decode and visualization
+    input = 1 / vae.config.scaling_factor * input 
+    sample_images = vae.decode(input.float(), return_dict=False)[0] # (b, 3, 512, 512)
+
+    image_pil = None
+    segmentation_mask = segmentation_mask[0].squeeze().cpu().numpy()
+    character_mask_pil = Image.fromarray(((segmentation_mask!=0)*255).astype('uint8')).resize((512,512))
+    character_mask_highlight_pil = segmentation_mask_visualization(args.font_path,segmentation_mask)
+    caption_pil = make_caption_pil(args.font_path, captions)
+    
+    # save pred_img
+    pred_image_list = []
+    for image in sample_images.float():
+        image = (image / 2 + 0.5).clamp(0, 1).unsqueeze(0)
+        image = image.cpu().permute(0, 2, 3, 1).numpy()[0]
+        image = Image.fromarray((image * 255).round().astype("uint8")).convert('RGB')
+        pred_image_list.append(image)
+        
     blank_pil = combine_image(args, None, pred_image_list, image_pil, character_mask_pil, character_mask_highlight_pil, caption_pil)
     return blank_pil
 
@@ -539,18 +645,18 @@ with gr.Blocks() as demo:
                 output = gr.Image()
         button.click(text_to_image, inputs=[prompt,slider_step,slider_batch,slider_seed], outputs=output)
         
-    # with gr.Tab("Text-to-Image-with-Template"):
-    #     with gr.Row():
-    #         with gr.Column(scale=1):
-    #             text_input = gr.Textbox(label='Input your prompt here.')
-    #             template_image = gr.Image(label='Template image')
-    #             slider_step = gr.Slider(minimum=1, maximum=1000, value=50, label="Sample Step", info="The sampling step for TextDiffuser ranging from [1,1000].")
-    #             slider_batch = gr.Slider(minimum=1, maximum=4, value=2, label="Sample Size", info="Number of samples generated from TextDiffuser.")
-    #             slider_seed = gr.Slider(minimum=1, maximum=10000, label="Seed", info="The random seed for sampling.", randomize=True)
-    #             button = gr.Button("Generate")
-    #         with gr.Column(scale=1):
-    #             output = gr.Image()
-    #     button.click(flip_text, inputs=text_input, outputs=output)
+    with gr.Tab("Text-to-Image-with-Template"):
+        with gr.Row():
+            with gr.Column(scale=1):
+                prompt = gr.Textbox(label='Input your prompt here.')
+                template_image = gr.Image(label='Template image')
+                slider_step = gr.Slider(minimum=1, maximum=1000, value=50, label="Sample Step", info="The sampling step for TextDiffuser ranging from [1,1000].")
+                slider_batch = gr.Slider(minimum=1, maximum=4, value=2, step=1, label="Sample Size", info="Number of samples generated from TextDiffuser.")
+                slider_seed = gr.Slider(minimum=1, maximum=10000, label="Seed", info="The random seed for sampling.", randomize=True)
+                button = gr.Button("Generate")
+            with gr.Column(scale=1):
+                output = gr.Image()
+        button.click(text_to_image_with_template, inputs=[prompt,template_image,slider_step,slider_batch,slider_seed], outputs=output)
         
     # with gr.Tab("Text-Inpainting"):
     #     with gr.Row():
