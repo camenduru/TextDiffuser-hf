@@ -513,7 +513,7 @@ def text_to_image(prompt,slider_step,slider_batch,slider_seed):
     # im_brightness.save(os.path.join(args.output_dir, sub_output_dir, 'segmentation_mask_from_pillow.png'))
 
     # 之后得把这个函数返回的image返回了
-    blank_pil = combine_image(args, sub_output_dir, pred_image_list, image_pil, character_mask_pil, character_mask_highlight_pil, caption_pil)
+    blank_pil = combine_image(args, None, pred_image_list, image_pil, character_mask_pil, character_mask_highlight_pil, caption_pil)
     return blank_pil
 
 
@@ -532,7 +532,7 @@ with gr.Blocks() as demo:
             with gr.Column(scale=1):
                 prompt = gr.Textbox(label='Input your prompt here. Please enclose keywords with single quotes.')
                 slider_step = gr.Slider(minimum=1, maximum=1000, value=50, label="Sample Step", info="The sampling step for TextDiffuser ranging from [1,1000].")
-                slider_batch = gr.Slider(minimum=1, maximum=4, value=2, label="Sample Size", info="Number of samples generated from TextDiffuser.")
+                slider_batch = gr.Slider(minimum=1, maximum=4, value=2, step=1, label="Sample Size", info="Number of samples generated from TextDiffuser.")
                 slider_seed = gr.Slider(minimum=1, maximum=10000, label="Seed", info="The random seed for sampling.", randomize=True)
                 button = gr.Button("Generate")
             with gr.Column(scale=1):
