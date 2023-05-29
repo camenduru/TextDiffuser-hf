@@ -308,10 +308,10 @@ args = parse_args()
 # args.prompt = prompt # 在这里修改prompt
 # If passed along, set the training seed now.
 
-print(f'{colored("[√]", "green")} Seed is set to {seed}.')
+# print(f'{colored("[√]", "green")} Seed is set to {seed}.')
 
 logging_dir = os.path.join(args.output_dir, args.logging_dir)
-sub_output_dir = f"{args.prompt}_[{args.mode.upper()}]_[SEED-{seed}]"
+# sub_output_dir = f"{args.prompt}_[{args.mode.upper()}]_[SEED-{seed}]"
 
 print(f'{colored("[√]", "green")} Logging dir is set to {logging_dir}.')
 
@@ -505,12 +505,12 @@ def text_to_image(prompt,slider_step,slider_batch,slider_seed):
         image = Image.fromarray((image * 255).round().astype("uint8")).convert('RGB')
         pred_image_list.append(image)
         
-    os.makedirs(f'{args.output_dir}/{sub_output_dir}', exist_ok=True)
+    # os.makedirs(f'{args.output_dir}/{sub_output_dir}', exist_ok=True)
     
-    image_pil.save(os.path.join(args.output_dir, sub_output_dir, 'render_text_image.png'))
-    enhancer = ImageEnhance.Brightness(segmentation_mask_from_pillow)
-    im_brightness = enhancer.enhance(5)
-    im_brightness.save(os.path.join(args.output_dir, sub_output_dir, 'segmentation_mask_from_pillow.png'))
+    # image_pil.save(os.path.join(args.output_dir, sub_output_dir, 'render_text_image.png'))
+    # enhancer = ImageEnhance.Brightness(segmentation_mask_from_pillow)
+    # im_brightness = enhancer.enhance(5)
+    # im_brightness.save(os.path.join(args.output_dir, sub_output_dir, 'segmentation_mask_from_pillow.png'))
 
     # 之后得把这个函数返回的image返回了
     blank_pil = combine_image(args, sub_output_dir, pred_image_list, image_pil, character_mask_pil, character_mask_highlight_pil, caption_pil)
