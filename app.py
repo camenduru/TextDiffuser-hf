@@ -656,6 +656,7 @@ def text_inpainting(prompt, orig_image,mask_image, slider_step,slider_batch,slid
     encoder_hidden_states_nocond = text_encoder(inputs_nocond)[0].cuda() # (b, 77, 768)
     print(f'{colored("[√]", "green")} encoder_hidden_states_nocond: {encoder_hidden_states_nocond.shape}.')
 
+    mask_image = mask_image.resize((512,512)).convert('RGB')
     text_mask = np.array(mask_image)
     threshold = 128  
     _, text_mask = cv2.threshold(text_mask, threshold, 255, cv2.THRESH_BINARY)
