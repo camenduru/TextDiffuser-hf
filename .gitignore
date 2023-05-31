@@ -1,0 +1,5 @@
+textdiffuser-ckpt
+images
+*.ttf  
+__pycache__
+*.png

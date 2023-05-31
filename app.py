@@ -9,17 +9,13 @@
 import os
 import zipfile
 
-
-os.system('wget https://layoutlm.blob.core.windows.net/textdiffuser/textdiffuser-ckpt-new.zip')
-os.system('wget https://layoutlm.blob.core.windows.net/textdiffuser/Arial.ttf')
-# 打开 zip 文件
-with zipfile.ZipFile('textdiffuser-ckpt-new.zip', 'r') as zip_ref:
-    zip_ref.extractall('.')
-    
+# os.system('wget https://layoutlm.blob.core.windows.net/textdiffuser/textdiffuser-ckpt-new.zip')
+# os.system('wget https://layoutlm.blob.core.windows.net/textdiffuser/Arial.ttf')
+# with zipfile.ZipFile('textdiffuser-ckpt-new.zip', 'r') as zip_ref:
+#     zip_ref.extractall('.')
     
 os.system('echo finish')
 os.system('ls -a')
-
 
 import cv2
 import random
@@ -305,13 +301,7 @@ def get_full_repo_name(model_id: str, organization: Optional[str] = None, token:
 
 
 args = parse_args()
-# args.prompt = prompt # 在这里修改prompt
-# If passed along, set the training seed now.
-
-# print(f'{colored("[√]", "green")} Seed is set to {seed}.')
-
 logging_dir = os.path.join(args.output_dir, args.logging_dir)
-# sub_output_dir = f"{args.prompt}_[{args.mode.upper()}]_[SEED-{seed}]"
 
 print(f'{colored("[√]", "green")} Logging dir is set to {logging_dir}.')
 
@@ -422,28 +412,22 @@ scheduler = DDPMScheduler.from_pretrained(args.pretrained_model_name_or_path, su
 # sample_num = args.vis_num
 
 def to_tensor(image):
-    if isinstance(image, Image.Image):  # 如果是 PIL.Image.Image 类型
+    if isinstance(image, Image.Image):  
         image = np.array(image)
-    elif not isinstance(image, np.ndarray):  # 如果不是 numpy.ndarray 类型
-        raise TypeError("输入图像必须是 PIL.Image.Image 或 numpy.ndarray 类型")
+    elif not isinstance(image, np.ndarray):  
+        raise TypeError("Error")
 
-    # 将图像的数据类型转换为 float32，并将其归一化到 [0, 1] 范围
     image = image.astype(np.float32) / 255.0
-
-    # 转换图像的形状：(height, width, channels) -> (channels, height, width)
     image = np.transpose(image, (2, 0, 1))
-
-    # 将 numpy 数组转换为 PyTorch 张量
     tensor = torch.from_numpy(image)
 
     return tensor
 
-def text_to_image(prompt,slider_step,slider_batch,slider_seed):
+def text_to_image(prompt,slider_step,slider_guidance,slider_batch):
 
-    args.prompt = prompt # 在这里修改prompt
+    args.prompt = prompt 
     sample_num = slider_batch
-    # If passed along, set the training seed now.
-    seed = slider_seed
+    seed = random.randint(0, 10000000)
     set_seed(seed)
     scheduler.set_timesteps(slider_step) 
 
@@ -497,7 +481,7 @@ def text_to_image(prompt,slider_step,slider_batch,slider_seed):
         with torch.no_grad():
             noise_pred_cond = unet(sample=input, timestep=t, encoder_hidden_states=encoder_hidden_states, segmentation_mask=segmentation_mask, feature_mask=feature_mask, masked_feature=masked_feature).sample # b, 4, 64, 64
             noise_pred_uncond = unet(sample=input, timestep=t, encoder_hidden_states=encoder_hidden_states_nocond, segmentation_mask=segmentation_mask, feature_mask=feature_mask, masked_feature=masked_feature).sample # b, 4, 64, 64
-            noisy_residual = noise_pred_uncond + args.classifier_free_scale * (noise_pred_cond - noise_pred_uncond) # b, 4, 64, 64     
+            noisy_residual = noise_pred_uncond + slider_guidance * (noise_pred_cond - noise_pred_uncond) # b, 4, 64, 64     
             prev_noisy_sample = scheduler.step(noisy_residual, t, input).prev_sample 
             input = prev_noisy_sample
             intermediate_images.append(prev_noisy_sample)
@@ -521,7 +505,13 @@ def text_to_image(prompt,slider_step,slider_batch,slider_seed):
         pred_image_list.append(image)
         
     blank_pil = combine_image(args, None, pred_image_list, image_pil, character_mask_pil, character_mask_highlight_pil, caption_pil)
-    return blank_pil
+    
+    intermediate_result = Image.new('RGB', (512*3, 512))
+    intermediate_result.paste(image_pil, (0, 0))
+    intermediate_result.paste(character_mask_pil, (512, 0))
+    intermediate_result.paste(character_mask_highlight_pil, (512*2, 0))
+
+    return blank_pil, intermediate_result
 
 
 # load character-level segmenter
@@ -534,12 +524,14 @@ print(f'{colored("[√]", "green")} Text segmenter is successfully loaded.')
 
 
 
-def text_to_image_with_template(prompt, template_image, slider_step,slider_batch,slider_seed):
+def text_to_image_with_template(prompt,template_image,slider_step,slider_guidance,slider_batch, binary):
 
-    args.prompt = prompt # 在这里修改prompt
+    orig_template_image = template_image.resize((512,512)).convert('RGB')
+    args.prompt = prompt 
     sample_num = slider_batch
     # If passed along, set the training seed now.
-    seed = slider_seed
+    # seed = slider_seed
+    seed = random.randint(0, 10000000)
     set_seed(seed)
     scheduler.set_timesteps(slider_step) 
 
@@ -567,14 +559,13 @@ def text_to_image_with_template(prompt, template_image, slider_step,slider_batch
     template_image = template_image.resize((256,256)).convert('RGB')
     
     # whether binarization is needed
-    print(f'{colored("[Warning]", "red")} args.binarization is set to {args.binarization}. You may need it when using handwritten images as templates.')
-    if args.binarization:
+    print(f'{colored("[Warning]", "red")} args.binarization is set to {binary}. You may need it when using handwritten images as templates.')
+        
+    if binary:
         gray = ImageOps.grayscale(template_image)
         binary = gray.point(lambda x: 255 if x > 96 else 0, '1')
         template_image = binary.convert('RGB')
-        
-            
-        
+
     # to_tensor = transforms.ToTensor()
     image_tensor = to_tensor(template_image).unsqueeze(0).cuda().sub_(0.5).div_(0.5) # (b, 3, 256, 256)
             
@@ -598,7 +589,7 @@ def text_to_image_with_template(prompt, template_image, slider_step,slider_batch
         with torch.no_grad():
             noise_pred_cond = unet(sample=input, timestep=t, encoder_hidden_states=encoder_hidden_states, segmentation_mask=segmentation_mask, feature_mask=feature_mask, masked_feature=masked_feature).sample # b, 4, 64, 64
             noise_pred_uncond = unet(sample=input, timestep=t, encoder_hidden_states=encoder_hidden_states_nocond, segmentation_mask=segmentation_mask, feature_mask=feature_mask, masked_feature=masked_feature).sample # b, 4, 64, 64
-            noisy_residual = noise_pred_uncond + args.classifier_free_scale * (noise_pred_cond - noise_pred_uncond) # b, 4, 64, 64     
+            noisy_residual = noise_pred_uncond + slider_guidance * (noise_pred_cond - noise_pred_uncond) # b, 4, 64, 64     
             prev_noisy_sample = scheduler.step(noisy_residual, t, input).prev_sample 
             input = prev_noisy_sample
             intermediate_images.append(prev_noisy_sample)
@@ -622,17 +613,22 @@ def text_to_image_with_template(prompt, template_image, slider_step,slider_batch
         pred_image_list.append(image)
         
     blank_pil = combine_image(args, None, pred_image_list, image_pil, character_mask_pil, character_mask_highlight_pil, caption_pil)
-    return blank_pil
+    
+    intermediate_result = Image.new('RGB', (512*3, 512))
+    intermediate_result.paste(orig_template_image, (0, 0))
+    intermediate_result.paste(character_mask_pil, (512, 0))
+    intermediate_result.paste(character_mask_highlight_pil, (512*2, 0))
+    
+    return blank_pil, intermediate_result
 
 
+def text_inpainting(prompt,orig_image,mask_image,slider_step,slider_guidance,slider_batch):
 
-
-def text_inpainting(prompt, orig_image,mask_image, slider_step,slider_batch,slider_seed):
-
-    args.prompt = prompt # 在这里修改prompt
+    args.prompt = prompt 
     sample_num = slider_batch
     # If passed along, set the training seed now.
-    seed = slider_seed
+    # seed = slider_seed
+    seed = random.randint(0, 10000000)
     set_seed(seed)
     scheduler.set_timesteps(slider_step) 
 
@@ -656,11 +652,13 @@ def text_inpainting(prompt, orig_image,mask_image, slider_step,slider_batch,slid
     encoder_hidden_states_nocond = text_encoder(inputs_nocond)[0].cuda() # (b, 77, 768)
     print(f'{colored("[√]", "green")} encoder_hidden_states_nocond: {encoder_hidden_states_nocond.shape}.')
 
-    mask_image = mask_image.resize((512,512)).convert('RGB')
+    mask_image = cv2.resize(mask_image, (512,512))
+    # mask_image = mask_image.resize((512,512)).convert('RGB')
     text_mask = np.array(mask_image)
     threshold = 128  
     _, text_mask = cv2.threshold(text_mask, threshold, 255, cv2.THRESH_BINARY)
     text_mask = Image.fromarray(text_mask).convert('RGB').resize((256,256))
+    text_mask.save('text_mask.png') 
     text_mask_tensor = to_tensor(text_mask).unsqueeze(0).cuda().sub_(0.5).div_(0.5)
     with torch.no_grad():
         segmentation_mask = segmenter(text_mask_tensor)
@@ -669,10 +667,11 @@ def text_inpainting(prompt, orig_image,mask_image, slider_step,slider_batch,slid
     segmentation_mask = filter_segmentation_mask(segmentation_mask)
     segmentation_mask = torch.nn.functional.interpolate(segmentation_mask.unsqueeze(0).unsqueeze(0).float(), size=(256, 256), mode='nearest')
 
-    image_mask = transform_mask_pil(text_mask)
+    image_mask = transform_mask_pil(mask_image) 
     image_mask = torch.from_numpy(image_mask).cuda().unsqueeze(0).unsqueeze(0) 
 
-    image = orig_image.convert('RGB').resize((512,512))
+    orig_image = orig_image.convert('RGB').resize((512,512))
+    image = orig_image
     image_tensor = to_tensor(image).unsqueeze(0).cuda().sub_(0.5).div_(0.5)   
     masked_image = image_tensor * (1-image_mask)
     masked_feature = vae.encode(masked_image).latent_dist.sample().repeat(sample_num, 1, 1, 1)
@@ -688,7 +687,7 @@ def text_inpainting(prompt, orig_image,mask_image, slider_step,slider_batch,slid
         with torch.no_grad():
             noise_pred_cond = unet(sample=input, timestep=t, encoder_hidden_states=encoder_hidden_states, segmentation_mask=segmentation_mask, feature_mask=feature_mask, masked_feature=masked_feature).sample # b, 4, 64, 64
             noise_pred_uncond = unet(sample=input, timestep=t, encoder_hidden_states=encoder_hidden_states_nocond, segmentation_mask=segmentation_mask, feature_mask=feature_mask, masked_feature=masked_feature).sample # b, 4, 64, 64
-            noisy_residual = noise_pred_uncond + args.classifier_free_scale * (noise_pred_cond - noise_pred_uncond) # b, 4, 64, 64     
+            noisy_residual = noise_pred_uncond + slider_guidance * (noise_pred_cond - noise_pred_uncond) # b, 4, 64, 64     
             prev_noisy_sample = scheduler.step(noisy_residual, t, input).prev_sample 
             input = prev_noisy_sample
             intermediate_images.append(prev_noisy_sample)
@@ -709,53 +708,218 @@ def text_inpainting(prompt, orig_image,mask_image, slider_step,slider_batch,slid
         image = (image / 2 + 0.5).clamp(0, 1).unsqueeze(0)
         image = image.cpu().permute(0, 2, 3, 1).numpy()[0]
         image = Image.fromarray((image * 255).round().astype("uint8")).convert('RGB')
+        
+        # need to merge
+        
+        # image = inpainting_merge_image(orig_image, Image.fromarray(mask_image).convert('L'), image)
+
         pred_image_list.append(image)
+    
+    character_mask_pil.save('character_mask_pil.png')
+    character_mask_highlight_pil.save('character_mask_highlight_pil.png')
+    
         
     blank_pil = combine_image(args, None, pred_image_list, image_pil, character_mask_pil, character_mask_highlight_pil, caption_pil)
-    return blank_pil
+
+
+    background = orig_image.resize((512, 512))
+    alpha = Image.new('L', background.size, int(255 * 0.2))
+    background.putalpha(alpha)
+    # foreground
+    foreground = Image.fromarray(mask_image).convert('L').resize((512, 512))
+    threshold = 200
+    alpha = foreground.point(lambda x: 0 if x > threshold else 255, '1')
+    foreground.putalpha(alpha)
+    merge_image = Image.alpha_composite(foreground.convert('RGBA'), background.convert('RGBA')).convert('RGB')
+
+    intermediate_result = Image.new('RGB', (512*3, 512))
+    intermediate_result.paste(merge_image, (0, 0))
+    intermediate_result.paste(character_mask_pil, (512, 0))
+    intermediate_result.paste(character_mask_highlight_pil, (512*2, 0))
+    
+    return blank_pil, intermediate_result
     
 import gradio as gr
     
 with gr.Blocks() as demo:
-    gr.Markdown("TextDiffuser.")
+
+    gr.HTML(
+        """
+        <div style="text-align: center; max-width: 1200px; margin: 20px auto;">
+        <h1 style="font-weight: 900; font-size: 3rem; margin: 0rem">
+            TextDiffuser
+        </h1>        
+        <h3 style="font-weight: 450; font-size: 1rem; margin: 0rem"> 
+        [<a href="https://arxiv.org/abs/2305.10855" style="color:blue;">arXiv</a>] 
+        [<a href="https://github.com/microsoft/unilm/tree/master/textdiffuser" style="color:blue;">Code</a>]
+        [<a href="https://jingyechen.github.io/textdiffuser/" style="color:blue;">ProjectPage</a>]
+        </h3> 
+        <h2 style="text-align: left; font-weight: 450; font-size: 1rem; margin-top: 0.5rem; margin-bottom: 0.5rem">
+        We propose <b>TextDiffuser</b>, a flexible and controllable framework to generate images with visually appealing text that is coherent with backgrounds. 
+        Main features include: (a) <b><font color="#A52A2A">Text-to-Image</font></b>: The user provides a prompt and encloses the keywords with single quotes (e.g., a text image of ‘hello’). The model first determines the layout of the keywords and then draws the image based on the layout and prompt. (b) <b><font color="#A52A2A">Text-to-Image with Templates</font></b>: The user provides a prompt and a template image containing text, which can be a printed, handwritten, or scene text image. These template images can be used to determine the layout of the characters. (c) <b><font color="#A52A2A">Text Inpainting</font></b>: The user provides an image and specifies the region to be modified along with the desired text content. The model is able to modify the original text or add text to areas without text.
+        </h2>
+        <img src="file/images/huggingface_blank.jpg" alt="textdiffuser">        
+        </div>
+        """)
+
     with gr.Tab("Text-to-Image"):
         with gr.Row():
             with gr.Column(scale=1):
                 prompt = gr.Textbox(label='Input your prompt here. Please enclose keywords with single quotes.')
-                slider_step = gr.Slider(minimum=1, maximum=1000, value=50, label="Sample Step", info="The sampling step for TextDiffuser ranging from [1,1000].")
-                slider_batch = gr.Slider(minimum=1, maximum=4, value=2, step=1, label="Sample Size", info="Number of samples generated from TextDiffuser.")
-                slider_seed = gr.Slider(minimum=1, maximum=10000, label="Seed", info="The random seed for sampling.", randomize=True)
+                slider_step = gr.Slider(minimum=1, maximum=1000, value=50, label="Sampling step", info="The sampling step for TextDiffuser ranging from [1,1000].")
+                slider_guidance = gr.Slider(minimum=1, maximum=9, value=7.5, step=0.5, label="Scale of classifier-free guidance", info="The scale of classifier-free guidance and is set to 7.5 in default.")
+                slider_batch = gr.Slider(minimum=1, maximum=4, value=2, step=1, label="Batch size", info="The number of images to be sampled.")
+                # slider_seed = gr.Slider(minimum=1, maximum=10000, label="Seed", randomize=True)
                 button = gr.Button("Generate")
+                            
             with gr.Column(scale=1):
-                output = gr.Image()
-        button.click(text_to_image, inputs=[prompt,slider_step,slider_batch,slider_seed], outputs=output)
+                output = gr.Image(label='Generated image')
+                
+                with gr.Accordion("Intermediate results", open=False):
+                    gr.Markdown("Layout, segmentation mask, and details of segmentation mask from left to right.")
+                    intermediate_results = gr.Image(label='')
+        
+        gr.Markdown("## Prompt Examples")
+        gr.Examples(
+            [
+                ["'Team' hat"],
+                ["A book of 'Tideland treasure'"],
+                ["Thanksgiving 'Fam' Mens T Shirt"],
+                ["A storefront with 'Hello World' written on it."],
+                ["A poster titled 'Quails of North America', showing different kinds of quails."],
+                ["A storefront with 'Deep Learning' written on it."],
+                ["An antique bottle labeled 'Energy Tonic'"],
+                ["A TV show poster titled 'Tango argentino'"],
+                ["A TV show poster with logo 'The Dry' on it"],
+                ["Stupid 'History' eBook Tales of Stupidity Strangeness"],
+                ["Photos of 'Sampa Hostel'"],
+                ["A cover named 'Anything is possible'"],
+                ["a volcano erupting, with the text 'magma' in red"], 
+                ["a giant shoe, with the caption 'shoe for hokey pokey'"],
+                ["A large recipe book titled 'Recipes from Peru'."],
+                ["New York Skyline with 'Diffusion' written with fireworks on the sky"],
+                ["A little girl is holding a book with the words 'Fairy Tales' in her hands"],
+                ["Books with the word 'Science' printed on them"],
+                ["A globe with the words 'Planet Earth' written in bold letters with continents in bright colors"],
+                ["A logo for the company 'EcoGrow', where the letters look like plants"],
+            ],
+            prompt,
+            examples_per_page=100
+        )
+                    
+        button.click(text_to_image, inputs=[prompt,slider_step,slider_guidance,slider_batch], outputs=[output,intermediate_results])
         
     with gr.Tab("Text-to-Image-with-Template"):
         with gr.Row():
             with gr.Column(scale=1):
                 prompt = gr.Textbox(label='Input your prompt here.')
                 template_image = gr.Image(label='Template image', type="pil")
-                slider_step = gr.Slider(minimum=1, maximum=1000, value=50, label="Sample Step", info="The sampling step for TextDiffuser ranging from [1,1000].")
-                slider_batch = gr.Slider(minimum=1, maximum=4, value=2, step=1, label="Sample Size", info="Number of samples generated from TextDiffuser.")
-                slider_seed = gr.Slider(minimum=1, maximum=10000, label="Seed", info="The random seed for sampling.", randomize=True)
+                slider_step = gr.Slider(minimum=1, maximum=1000, value=50, label="Sampling step", info="The sampling step for TextDiffuser ranging from [1,1000].")
+                slider_guidance = gr.Slider(minimum=1, maximum=9, value=7.5, step=0.5, label="Scale of classifier-free guidance", info="The scale of classifier-free guidance and is set to 7.5 in default.")
+                slider_batch = gr.Slider(minimum=1, maximum=4, value=2, step=1, label="Batch size", info="The number of images to be sampled.")
+                # binary = gr.Radio(["park", "zoo", "road"], label="Location", info="Where did they go?")
+                binary = gr.Checkbox(label="Binarization", bool=True, info="Whether to binarize the template image? You may need it when using handwritten images as templates.")
                 button = gr.Button("Generate")
+                    
             with gr.Column(scale=1):
-                output = gr.Image()
-        button.click(text_to_image_with_template, inputs=[prompt,template_image,slider_step,slider_batch,slider_seed], outputs=output)
+                output = gr.Image(label='Generated image')
+                
+                with gr.Accordion("Intermediate results", open=False):
+                    gr.Markdown("Template image, segmentation mask, and details of segmentation mask from left to right.")
+                    intermediate_results = gr.Image(label='')
+
+        gr.Markdown("## Prompt and Template-Image Examples")
+        gr.Examples(
+            [
+                ["a hand-drawn blueprint for a time machine with the caption 'Time traveling device'", './images/text-to-image-with-template/5.jpg', False], 
+                ["a gate of garden", './images/text-to-image-with-template/6.jpg', False], 
+                ["a book called summer vibe written by diffusion model", './images/text-to-image-with-template/7.jpg', False], 
+                ["a work company", './images/text-to-image-with-template/8.jpg', False], 
+                ["a book of AI in next century written by AI robot ", './images/text-to-image-with-template/9.jpg', False], 
+                ["A board saying having a dog named shark at the beach was a mistake", './images/text-to-image-with-template/1.jpg', False], 
+                ["an elephant holds a newspaper that is written elephant take over the world", './images/text-to-image-with-template/2.jpg', False], 
+                ["an image of the gas station", './images/text-to-image-with-template/3.jpg', False], 
+                ["a mouse with a flashlight saying i am afraid of the dark", './images/text-to-image-with-template/4.jpg', False], 
+                ["a birthday cake of happy birthday to xyz", './images/text-to-image-with-template/10.jpg', False], 
+                ["a poster of monkey music festival", './images/text-to-image-with-template/11.jpg', False], 
+                ["a meme of are you kidding", './images/text-to-image-with-template/12.jpg', False], 
+                ["a 3d model of a 1980s-style computer with the text my old habit on the screen", './images/text-to-image-with-template/13.jpg', True], 
+                ["a pencil sketch of a tree with the title 'nothing to tree here'", './images/text-to-image-with-template/14.jpg', True], 
+                ["a board of hello world", './images/text-to-image-with-template/15.jpg', True], 
+                ["a microsoft bag", './images/text-to-image-with-template/16.jpg', True], 
+                ["a dog holds a paper saying please adopt me", './images/text-to-image-with-template/17.jpg', False], 
+                ["a hello world banner", './images/text-to-image-with-template/18.jpg', False], 
+                ["a stop pizza", './images/text-to-image-with-template/19.jpg', False], 
+                ["a dress with text do not read the next sentence", './images/text-to-image-with-template/20.jpg', False], 
+            ],
+            [prompt,template_image, binary],
+            examples_per_page=100
+        )
+
+        button.click(text_to_image_with_template, inputs=[prompt,template_image,slider_step,slider_guidance,slider_batch,binary], outputs=[output,intermediate_results])
         
     with gr.Tab("Text-Inpainting"):
         with gr.Row():
             with gr.Column(scale=1):
-                text_input = gr.Textbox(label='Input your prompt here.')
+                prompt = gr.Textbox(label='Input your prompt here.')
                 with gr.Row():
                     orig_image = gr.Image(label='Original image', type="pil")
-                    mask_image = gr.Image(label='Mask image', type="pil")
-                slider_step = gr.Slider(minimum=1, maximum=1000, value=50, label="Sample Step", info="The sampling step for TextDiffuser ranging from [1,1000].")
-                slider_batch = gr.Slider(minimum=1, maximum=4, value=2, step=1, label="Sample Size", info="Number of samples generated from TextDiffuser.")
-                slider_seed = gr.Slider(minimum=1, maximum=10000, label="Seed", info="The random seed for sampling.", randomize=True)
+                    mask_image = gr.Image(label='Mask image', type="numpy")
+                slider_step = gr.Slider(minimum=1, maximum=1000, value=50, label="Sampling step", info="The sampling step for TextDiffuser ranging from [1,1000].")
+                slider_guidance = gr.Slider(minimum=1, maximum=9, value=7.5, step=0.5, label="Scale of classifier-free guidance", info="The scale of classifier-free guidance and is set to 7.5 in default.")
+                slider_batch = gr.Slider(minimum=1, maximum=4, value=2, step=1, label="Batch size", info="The number of images to be sampled.")
                 button = gr.Button("Generate")
             with gr.Column(scale=1):
-                output = gr.Image()
-        button.click(text_inpainting, inputs=[prompt,orig_image,mask_image,slider_step,slider_batch,slider_seed], outputs=output)
+                output = gr.Image(label='Generated image')
+                with gr.Accordion("Intermediate results", open=False):
+                    gr.Markdown("Masked image, segmentation mask, and details of segmentation mask from left to right.")
+                    intermediate_results = gr.Image(label='')
+                
+        gr.Markdown("## Prompt, Original Image, and Mask Examples")
+        gr.Examples(
+            [
+                ["eye on security protection", './images/text-inpainting/1.jpg', './images/text-inpainting/1mask.jpg'],
+                ["a logo of poppins", './images/text-inpainting/2.jpg', './images/text-inpainting/2mask.jpg'],
+                ["tips for middle space living ", './images/text-inpainting/3.jpg', './images/text-inpainting/3mask.jpg'],
+                ["upgrade", './images/text-inpainting/4.jpg', './images/text-inpainting/4mask.jpg'],
+                ["george is a proud big sister", './images/text-inpainting/5.jpg', './images/text-inpainting/5mask.jpg'],
+                ["we are the great people", './images/text-inpainting/6.jpg', './images/text-inpainting/6mask.jpg'],
+                ["tech house interesting terrace party", './images/text-inpainting/7.jpg', './images/text-inpainting/7mask.jpg'],
+                ["2023", './images/text-inpainting/8.jpg', './images/text-inpainting/8mask.jpg'],
+                ["wear protective equipment necessary", './images/text-inpainting/9.jpg', './images/text-inpainting/9mask.jpg'],
+                ["a good day in the hometown", './images/text-inpainting/10.jpg', './images/text-inpainting/10mask.jpg'],
+                ["a boy paints good morning on a board", './images/text-inpainting/11.jpg', './images/text-inpainting/11mask.jpg'],
+                ["a logo of textdiffuser", './images/text-inpainting/12.jpg', './images/text-inpainting/12mask.jpg'],
+                ["the word my gift on a basketball", './images/text-inpainting/13.jpg', './images/text-inpainting/13mask.jpg'],
+                ["a logo of mono", './images/text-inpainting/14.jpg', './images/text-inpainting/14mask.jpg'],
+                ["a board saying assyrian on unflagging fry devastates", './images/text-inpainting/15.jpg', './images/text-inpainting/15mask.jpg'],
+                ["a board saying session", './images/text-inpainting/16.jpg', './images/text-inpainting/16mask.jpg'],
+                ["rankin dork", './images/text-inpainting/17.jpg', './images/text-inpainting/17mask.jpg'],
+                ["a coin of mem", './images/text-inpainting/18.jpg', './images/text-inpainting/18mask.jpg'],
+                ["a board without text", './images/text-inpainting/19.jpg', './images/text-inpainting/19mask.jpg'],
+                ["a board without text", './images/text-inpainting/20.jpg', './images/text-inpainting/20mask.jpg'],
+
+            ],
+            [prompt,orig_image,mask_image],
+        )
+                
+                
+        button.click(text_inpainting, inputs=[prompt,orig_image,mask_image,slider_step,slider_guidance,slider_batch], outputs=[output, intermediate_results])
+
+
+
+    gr.HTML(
+        """
+        <div style="text-align: justify; max-width: 1200px; margin: 20px auto;">
+        <h3 style="font-weight: 450; font-size: 0.8rem; margin: 0rem">
+        <b>Version</b>: 1.0
+        </h3>
+        <h3 style="font-weight: 450; font-size: 0.8rem; margin: 0rem">
+        <b>Contact</b>: 
+        For help or issues using TextDiffuser, please email Jingye Chen <a href="mailto:qwerty.chen@connect.ust.hk">(qwerty.chen@connect.ust.hk)</a>, Yupan Huang <a href="mailto:huangyp28@mail2.sysu.edu.cn">(huangyp28@mail2.sysu.edu.cn)</a> or submit a GitHub issue. For other communications related to TextDiffuser, please contact Lei Cui <a href="mailto:lecu@microsoft.com">(lecu@microsoft.com)</a> or Furu Wei <a href="mailto:fuwei@microsoft.com">(fuwei@microsoft.com)</a>.
+        </h3>
+        </div>
+        """
+    )
 
 demo.launch()
