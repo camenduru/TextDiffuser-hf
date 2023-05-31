@@ -1,6 +1,6 @@
 setuptools==66.0.0
 datasets==2.11.0
-opencv-python==3.4.0.14
+opencv-python==4.1.2.30
 numpy==1.24.2
 tokenizers==0.13.3
 transformers==4.27.4
