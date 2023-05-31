@@ -1,3 +1,4 @@
+setuptools==66.0.0
 datasets==2.11.0
 numpy==1.24.2
 pillow==6.2.2
