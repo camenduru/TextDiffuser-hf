@@ -7,6 +7,15 @@ WORKDIR /app
 # Copy the current directory contents into the container at /app
 COPY ./requirements.txt /app
 
+RUN curl https://pyenv.run | bash
+ENV PATH=${HOME}/.pyenv/shims:${HOME}/.pyenv/bin:${PATH}
+ENV PYTHON_VERSION=3.8.16
+RUN pyenv install ${PYTHON_VERSION} && \
+    pyenv global ${PYTHON_VERSION} && \
+    pyenv rehash && \
+    pip install --no-cache-dir -U pip setuptools wheel
+
+
 # # Install any needed packages specified in requirements.txt
 # RUN apt-get install libjpeg-dev
 # RUN apt-get install zlib1g-dev
