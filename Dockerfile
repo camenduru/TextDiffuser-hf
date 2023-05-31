@@ -7,15 +7,6 @@ WORKDIR /app
 # Copy the current directory contents into the container at /app
 COPY ./requirements.txt /app
 
-RUN curl https://pyenv.run | bash
-ENV PATH=${HOME}/.pyenv/shims:${HOME}/.pyenv/bin:${PATH}
-ENV PYTHON_VERSION=3.8.16
-RUN pyenv install ${PYTHON_VERSION} && \
-    pyenv global ${PYTHON_VERSION} && \
-    pyenv rehash && \
-    pip install --no-cache-dir -U pip setuptools wheel
-
-
 # # Install any needed packages specified in requirements.txt
 # RUN apt-get install libjpeg-dev
 # RUN apt-get install zlib1g-dev
@@ -23,8 +14,8 @@ RUN pyenv install ${PYTHON_VERSION} && \
 RUN apt-get install zip unzip cmake libtiff5-dev libjpeg8-dev libopenjp2-7-dev zlib1g-dev libfreetype6-dev liblcms2-dev libwebp-dev tcl8.6-dev tk8.6-dev python3-tk libharfbuzz-dev libfribidi-dev libxcb1-dev
 
 RUN pip install -r /app/requirements.txt
-RUN pip install https://download.pytorch.org/whl/Pillow-9.3.0-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
-RUN pip install https://download.pytorch.org/whl/cu113/torch-1.12.1%2Bcu113-cp38-cp38-linux_x86_64.whl
+RUN pip install https://download.pytorch.org/whl/Pillow-9.3.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+RUN pip install https://download.pytorch.org/whl/cu113/torch-1.12.1%2Bcu113-cp310-cp310-linux_x86_64.whl
 
 # Define environment variable
 ENV NAME gradio
