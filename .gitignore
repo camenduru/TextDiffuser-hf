@@ -3,3 +3,4 @@ images
 *.ttf  
 __pycache__
 *.png
+*.zip
