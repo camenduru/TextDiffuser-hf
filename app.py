@@ -897,8 +897,8 @@ with gr.Blocks() as demo:
                 ["a logo of mono", './images/text-inpainting/14.jpg', './images/text-inpainting/14mask.jpg'],
                 ["a board saying assyrian on unflagging fry devastates", './images/text-inpainting/15.jpg', './images/text-inpainting/15mask.jpg'],
                 ["a board saying session", './images/text-inpainting/16.jpg', './images/text-inpainting/16mask.jpg'],
-                ["rankin dork", './images/text-inpainting/17.jpg', './images/text-inpainting/17mask.jpg'],
-                ["a coin of mem", './images/text-inpainting/18.jpg', './images/text-inpainting/18mask.jpg'],
+                ["rankin dork", './images/text-inpainting/17mask.jpg', './images/text-inpainting/17.jpg'],
+                ["a coin of mem", './images/text-inpainting/18mask.jpg', './images/text-inpainting/18.jpg'],
                 ["a board without text", './images/text-inpainting/19.jpg', './images/text-inpainting/19mask.jpg'],
                 ["a board without text", './images/text-inpainting/20.jpg', './images/text-inpainting/20mask.jpg'],
 
