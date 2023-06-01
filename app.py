@@ -786,7 +786,6 @@ with gr.Blocks() as demo:
         gr.Examples(
             [
                 ["'Team' hat"],
-                ["A book of 'Tideland treasure'"],
                 ["Thanksgiving 'Fam' Mens T Shirt"],
                 ["A storefront with 'Hello World' written on it."],
                 ["A poster titled 'Quails of North America', showing different kinds of quails."],
