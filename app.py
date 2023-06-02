@@ -768,14 +768,12 @@ with gr.Blocks() as demo:
     gr.HTML(
         """
         <div style="text-align: center; max-width: 1200px; margin: 20px auto;">
-        <h2 style="font-weight: 900; font-size: 3rem; margin: 0rem">
-            TextDiffuser: Diffusion Models as Text Painters
-        </h2>        
+        <h2>TextDiffuser: Diffusion Models as Text Painters</h2>        
         <h3 style="font-weight: 450; font-size: 1rem; margin: 0rem"> 
-        [<a href="https://arxiv.org/abs/2305.10855" style="color:blue;">arXiv</a>] 
-        [<a href="https://github.com/microsoft/unilm/tree/master/textdiffuser" style="color:blue;">Code</a>]
-        [<a href="https://jingyechen.github.io/textdiffuser/" style="color:blue;">ProjectPage</a>]
-        </h3>      
+        [<a href="https://arxiv.org/abs/2305.10855" style="color:white;">arXiv</a>] 
+        [<a href="https://github.com/microsoft/unilm/tree/master/textdiffuser" style="color:white;">Code</a>]
+        [<a href="https://jingyechen.github.io/textdiffuser/" style="color:white;">ProjectPage</a>]
+        </h3>       
         </div>
         """)
 
