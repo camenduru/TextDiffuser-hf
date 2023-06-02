@@ -1,6 +1,12 @@
-textdiffuser-ckpt
-images
-*.ttf  
+*.pth
 __pycache__
-*.png
+*ckpt
+*.txt
+output*
 *.zip
+*.json
+*.ttf
+images
+*zip*
+*tif*
+*.png

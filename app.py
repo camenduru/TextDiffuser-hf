@@ -9,13 +9,19 @@
 import os
 import zipfile
 
-os.system('wget https://layoutlm.blob.core.windows.net/textdiffuser/textdiffuser-ckpt-new.zip')
-os.system('wget https://layoutlm.blob.core.windows.net/textdiffuser/images.zip')
-os.system('wget https://layoutlm.blob.core.windows.net/textdiffuser/Arial.ttf')
-with zipfile.ZipFile('textdiffuser-ckpt-new.zip', 'r') as zip_ref:
-    zip_ref.extractall('.')
-with zipfile.ZipFile('images.zip', 'r') as zip_ref:
-    zip_ref.extractall('.')
+if not os.path.exists('textdiffuser-ckpt'):
+    os.system('wget https://layoutlm.blob.core.windows.net/textdiffuser/textdiffuser-ckpt-new.zip')
+    with zipfile.ZipFile('textdiffuser-ckpt-new.zip', 'r') as zip_ref:
+        zip_ref.extractall('.')
+
+if not os.path.exists('images'):
+    os.system('wget https://layoutlm.blob.core.windows.net/textdiffuser/images.zip')
+    with zipfile.ZipFile('images.zip', 'r') as zip_ref:
+        zip_ref.extractall('.')
+
+if not os.path.exists('Arial.ttf'):
+    os.system('wget https://layoutlm.blob.core.windows.net/textdiffuser/Arial.ttf')
+
     
 os.system('echo finish')
 os.system('ls -a')
@@ -429,6 +435,10 @@ def to_tensor(image):
 def text_to_image(prompt,slider_step,slider_guidance,slider_batch):
 
     prompt = prompt.replace('"', "'")
+    
+    if slider_step>=100:
+        slider_step = 100
+        
     args.prompt = prompt 
     sample_num = slider_batch
     seed = random.randint(0, 10000000)
@@ -530,6 +540,9 @@ print(f'{colored("[√]", "green")} Text segmenter is successfully loaded.')
 
 def text_to_image_with_template(prompt,template_image,slider_step,slider_guidance,slider_batch, binary):
 
+    if slider_step>=100:
+        slider_step = 100
+        
     orig_template_image = template_image.resize((512,512)).convert('RGB')
     args.prompt = prompt 
     sample_num = slider_batch
@@ -628,6 +641,9 @@ def text_to_image_with_template(prompt,template_image,slider_step,slider_guidanc
 
 def text_inpainting(prompt,orig_image,mask_image,slider_step,slider_guidance,slider_batch):
 
+    if slider_step>=100:
+        slider_step = 100
+        
     args.prompt = prompt 
     sample_num = slider_batch
     # If passed along, set the training seed now.
@@ -769,8 +785,8 @@ with gr.Blocks() as demo:
     with gr.Tab("Text-to-Image"):
         with gr.Row():
             with gr.Column(scale=1):
-                prompt = gr.Textbox(label="Input your prompt here. Please enclose keywords with 【single quotes】, you may refer to the examples below.", placeholder="'Team' hat")
-                slider_step = gr.Slider(minimum=1, maximum=100, value=20, label="Sampling step", info="The sampling step for TextDiffuser.")
+                prompt = gr.Textbox(label="Input your prompt here. Please enclose keywords with 【single quotes】, you may refer to the examples below. The current version only supports input in English characters.", placeholder="Placeholder 'Team' hat")
+                slider_step = gr.Slider(minimum=1, maximum=50, value=20, step=1, label="Sampling step", info="The sampling step for TextDiffuser.")
                 slider_guidance = gr.Slider(minimum=1, maximum=9, value=7.5, step=0.5, label="Scale of classifier-free guidance", info="The scale of classifier-free guidance and is set to 7.5 in default.")
                 slider_batch = gr.Slider(minimum=1, maximum=4, value=4, step=1, label="Batch size", info="The number of images to be sampled.")
                 # slider_seed = gr.Slider(minimum=1, maximum=10000, label="Seed", randomize=True)
@@ -814,7 +830,7 @@ with gr.Blocks() as demo:
             with gr.Column(scale=1):
                 prompt = gr.Textbox(label='Input your prompt here.')
                 template_image = gr.Image(label='Template image', type="pil")
-                slider_step = gr.Slider(minimum=1, maximum=100, value=20, label="Sampling step", info="The sampling step for TextDiffuser.")
+                slider_step = gr.Slider(minimum=1, maximum=50, value=20, step=1, label="Sampling step", info="The sampling step for TextDiffuser.")
                 slider_guidance = gr.Slider(minimum=1, maximum=9, value=7.5, step=0.5, label="Scale of classifier-free guidance", info="The scale of classifier-free guidance and is set to 7.5 in default.")
                 slider_batch = gr.Slider(minimum=1, maximum=4, value=4, step=1, label="Batch size", info="The number of images to be sampled.")
                 # binary = gr.Radio(["park", "zoo", "road"], label="Location", info="Where did they go?")
@@ -863,7 +879,7 @@ with gr.Blocks() as demo:
                 with gr.Row():
                     orig_image = gr.Image(label='Original image', type="pil")
                     mask_image = gr.Image(label='Mask image', type="numpy")
-                slider_step = gr.Slider(minimum=1, maximum=100, value=20, label="Sampling step", info="The sampling step for TextDiffuser.")
+                slider_step = gr.Slider(minimum=1, maximum=50, value=20, step=1, label="Sampling step", info="The sampling step for TextDiffuser.")
                 slider_guidance = gr.Slider(minimum=1, maximum=9, value=7.5, step=0.5, label="Scale of classifier-free guidance", info="The scale of classifier-free guidance and is set to 7.5 in default.")
                 slider_batch = gr.Slider(minimum=1, maximum=4, value=4, step=1, label="Batch size", info="The number of images to be sampled.")
                 button = gr.Button("Generate")
