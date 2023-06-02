@@ -7,6 +7,7 @@
 # ------------------------------------------
 
 import os
+import re
 import zipfile
 
 if not os.path.exists('textdiffuser-ckpt'):
@@ -435,7 +436,8 @@ def to_tensor(image):
 def text_to_image(prompt,slider_step,slider_guidance,slider_batch):
 
     prompt = prompt.replace('"', "'")
-    
+    prompt = re.sub(r"[^a-zA-Z0-9'\" ]+", "", prompt)
+
     if slider_step>=100:
         slider_step = 100
         
