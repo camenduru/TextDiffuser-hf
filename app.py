@@ -768,19 +768,14 @@ with gr.Blocks() as demo:
     gr.HTML(
         """
         <div style="text-align: center; max-width: 1200px; margin: 20px auto;">
-        <h1 style="font-weight: 900; font-size: 3rem; margin: 0rem">
+        <h2 style="font-weight: 900; font-size: 3rem; margin: 0rem">
             TextDiffuser: Diffusion Models as Text Painters
-        </h1>        
+        </h2>        
         <h3 style="font-weight: 450; font-size: 1rem; margin: 0rem"> 
         [<a href="https://arxiv.org/abs/2305.10855" style="color:blue;">arXiv</a>] 
         [<a href="https://github.com/microsoft/unilm/tree/master/textdiffuser" style="color:blue;">Code</a>]
         [<a href="https://jingyechen.github.io/textdiffuser/" style="color:blue;">ProjectPage</a>]
-        </h3> 
-        <h2 style="text-align: left; font-weight: 450; font-size: 1rem; margin-top: 0.5rem; margin-bottom: 0.5rem">
-        We propose <b>TextDiffuser</b>, a flexible and controllable framework to generate images with visually appealing text that is coherent with backgrounds. 
-        Main features include: (a) <b><font color="#A52A2A">Text-to-Image</font></b>: The user provides a prompt and encloses the keywords with single quotes (e.g., a text image of ‘hello’). The model first determines the layout of the keywords and then draws the image based on the layout and prompt. (b) <b><font color="#A52A2A">Text-to-Image with Templates</font></b>: The user provides a prompt and a template image containing text, which can be a printed, handwritten, or scene text image. These template images can be used to determine the layout of the characters. (c) <b><font color="#A52A2A">Text Inpainting</font></b>: The user provides an image and specifies the region to be modified along with the desired text content. The model is able to modify the original text or add text to areas without text.
-        </h2>
-        <img src="file/images/huggingface_blank.jpg" alt="textdiffuser">        
+        </h3>      
         </div>
         """)
 
