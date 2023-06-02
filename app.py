@@ -770,7 +770,7 @@ with gr.Blocks() as demo:
         with gr.Row():
             with gr.Column(scale=1):
                 prompt = gr.Textbox(label="Input your prompt here. Please enclose keywords with 【single quotes】, you may refer to the examples below.", placeholder="'Team' hat")
-                slider_step = gr.Slider(minimum=1, maximum=1000, value=20, label="Sampling step", info="The sampling step for TextDiffuser ranging from [1,1000].")
+                slider_step = gr.Slider(minimum=1, maximum=100, value=20, label="Sampling step", info="The sampling step for TextDiffuser.")
                 slider_guidance = gr.Slider(minimum=1, maximum=9, value=7.5, step=0.5, label="Scale of classifier-free guidance", info="The scale of classifier-free guidance and is set to 7.5 in default.")
                 slider_batch = gr.Slider(minimum=1, maximum=4, value=4, step=1, label="Batch size", info="The number of images to be sampled.")
                 # slider_seed = gr.Slider(minimum=1, maximum=10000, label="Seed", randomize=True)
@@ -814,7 +814,7 @@ with gr.Blocks() as demo:
             with gr.Column(scale=1):
                 prompt = gr.Textbox(label='Input your prompt here.')
                 template_image = gr.Image(label='Template image', type="pil")
-                slider_step = gr.Slider(minimum=1, maximum=1000, value=20, label="Sampling step", info="The sampling step for TextDiffuser ranging from [1,1000].")
+                slider_step = gr.Slider(minimum=1, maximum=100, value=20, label="Sampling step", info="The sampling step for TextDiffuser.")
                 slider_guidance = gr.Slider(minimum=1, maximum=9, value=7.5, step=0.5, label="Scale of classifier-free guidance", info="The scale of classifier-free guidance and is set to 7.5 in default.")
                 slider_batch = gr.Slider(minimum=1, maximum=4, value=4, step=1, label="Batch size", info="The number of images to be sampled.")
                 # binary = gr.Radio(["park", "zoo", "road"], label="Location", info="Where did they go?")
@@ -863,7 +863,7 @@ with gr.Blocks() as demo:
                 with gr.Row():
                     orig_image = gr.Image(label='Original image', type="pil")
                     mask_image = gr.Image(label='Mask image', type="numpy")
-                slider_step = gr.Slider(minimum=1, maximum=1000, value=20, label="Sampling step", info="The sampling step for TextDiffuser ranging from [1,1000].")
+                slider_step = gr.Slider(minimum=1, maximum=100, value=20, label="Sampling step", info="The sampling step for TextDiffuser.")
                 slider_guidance = gr.Slider(minimum=1, maximum=9, value=7.5, step=0.5, label="Scale of classifier-free guidance", info="The scale of classifier-free guidance and is set to 7.5 in default.")
                 slider_batch = gr.Slider(minimum=1, maximum=4, value=4, step=1, label="Batch size", info="The number of images to be sampled.")
                 button = gr.Button("Generate")
