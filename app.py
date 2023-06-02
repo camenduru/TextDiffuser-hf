@@ -428,6 +428,7 @@ def to_tensor(image):
 
 def text_to_image(prompt,slider_step,slider_guidance,slider_batch):
 
+    prompt = prompt.replace('"', "'")
     args.prompt = prompt 
     sample_num = slider_batch
     seed = random.randint(0, 10000000)
@@ -768,7 +769,7 @@ with gr.Blocks() as demo:
     with gr.Tab("Text-to-Image"):
         with gr.Row():
             with gr.Column(scale=1):
-                prompt = gr.Textbox(label='Input your prompt here. Please enclose keywords with single quotes.')
+                prompt = gr.Textbox(label="Input your prompt here. Please enclose keywords with 【single quotes】, you may refer to the examples below.")
                 slider_step = gr.Slider(minimum=1, maximum=1000, value=20, label="Sampling step", info="The sampling step for TextDiffuser ranging from [1,1000].")
                 slider_guidance = gr.Slider(minimum=1, maximum=9, value=7.5, step=0.5, label="Scale of classifier-free guidance", info="The scale of classifier-free guidance and is set to 7.5 in default.")
                 slider_batch = gr.Slider(minimum=1, maximum=4, value=4, step=1, label="Batch size", info="The number of images to be sampled.")
