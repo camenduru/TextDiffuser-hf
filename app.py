@@ -429,6 +429,10 @@ def to_tensor(image):
 def text_to_image(prompt,slider_step,slider_guidance,slider_batch):
 
     prompt = prompt.replace('"', "'")
+    
+    if slider_step>=100:
+        slider_step = 100
+        
     args.prompt = prompt 
     sample_num = slider_batch
     seed = random.randint(0, 10000000)
@@ -530,6 +534,9 @@ print(f'{colored("[√]", "green")} Text segmenter is successfully loaded.')
 
 def text_to_image_with_template(prompt,template_image,slider_step,slider_guidance,slider_batch, binary):
 
+    if slider_step>=100:
+        slider_step = 100
+        
     orig_template_image = template_image.resize((512,512)).convert('RGB')
     args.prompt = prompt 
     sample_num = slider_batch
@@ -628,6 +635,9 @@ def text_to_image_with_template(prompt,template_image,slider_step,slider_guidanc
 
 def text_inpainting(prompt,orig_image,mask_image,slider_step,slider_guidance,slider_batch):
 
+    if slider_step>=100:
+        slider_step = 100
+        
     args.prompt = prompt 
     sample_num = slider_batch
     # If passed along, set the training seed now.
