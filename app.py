@@ -438,8 +438,8 @@ def text_to_image(prompt,slider_step,slider_guidance,slider_batch):
     prompt = prompt.replace('"', "'")
     prompt = re.sub(r"[^a-zA-Z0-9'\" ]+", "", prompt)
 
-    if slider_step>=100:
-        slider_step = 100
+    if slider_step>=50:
+        slider_step = 50
         
     args.prompt = prompt 
     sample_num = slider_batch
@@ -542,8 +542,8 @@ print(f'{colored("[√]", "green")} Text segmenter is successfully loaded.')
 
 def text_to_image_with_template(prompt,template_image,slider_step,slider_guidance,slider_batch, binary):
 
-    if slider_step>=100:
-        slider_step = 100
+    if slider_step>=50:
+        slider_step = 50
         
     orig_template_image = template_image.resize((512,512)).convert('RGB')
     args.prompt = prompt 
@@ -643,8 +643,8 @@ def text_to_image_with_template(prompt,template_image,slider_step,slider_guidanc
 
 def text_inpainting(prompt,orig_image,mask_image,slider_step,slider_guidance,slider_batch):
 
-    if slider_step>=100:
-        slider_step = 100
+    if slider_step>=50:
+        slider_step = 50
         
     args.prompt = prompt 
     sample_num = slider_batch
@@ -804,6 +804,13 @@ with gr.Blocks() as demo:
         gr.Markdown("## Prompt Examples")
         gr.Examples(
             [
+                ["Distinguished poster of 'SPIDERMAN'. Trending on ArtStation and Pixiv. A vibrant digital oil painting. A highly detailed fantasy character illustration by Wayne Reynolds and Charles Monet and Gustave Dore and Carl Critchlow and Bram Sels"],
+                ["A detailed portrait of a fox guardian with a shield with 'Kung Fu' written on it, by victo ngai and justin gerard, digital art, realistic painting, very detailed, fantasy, high definition, cinematic light, dnd, trending on artstation"],
+                ["portrait of a 'dragon', concept art, sumi - e style, intricate linework, green smoke, artstation, trending, highly detailed, smooth, focus, art by yoji shinkawa,"],
+                ["elderly woman dressed in extremely colorful clothes with many strange patterns posing for a high fashion photoshoot of 'FASHION', haute couture, golden hour, artstation, by J. C. Leyendecker and Peter Paul Rubens"],
+                ["epic digital art of a luxury yacht named 'Time Machine' driving through very dark hard edged city towers from tron movie, faint tall mountains in background, wlop, pixiv"],
+                ["A poster of 'Adventurer'.  A beautiful so tall boy with big eyes and small nose is in the jungle, he wears normal clothes and shows his full length, which we see from the front, unreal engine, cozy indoor lighting, artstation, detailed"],
+                ["A poster of 'AI BABY'. Cute and adorable cartoon it baby, fantasy, dreamlike, surrealism, super cute, trending on artstation"],
                 ["'Team' hat"],
                 ["Thanksgiving 'Fam' Mens T Shirt"],
                 ["A storefront with 'Hello World' written on it."],
@@ -814,7 +821,6 @@ with gr.Blocks() as demo:
                 ["A TV show poster with logo 'The Dry' on it"],
                 ["Stupid 'History' eBook Tales of Stupidity Strangeness"],
                 ["Photos of 'Sampa Hostel'"],
-                ["A cover named 'Anything is possible'"],
                 ["A large recipe book titled 'Recipes from Peru'."],
                 ["New York Skyline with 'Diffusion' written with fireworks on the sky"],
                 ["Books with the word 'Science' printed on them"],
@@ -849,8 +855,8 @@ with gr.Blocks() as demo:
         gr.Markdown("## Prompt and Template-Image Examples")
         gr.Examples(
             [
+                ["summer garden, artwork, highly detailed, sharp focus, realist, digital painting, artstation, concept art, art by jay oh, greg rutkowski, wlop", './images/text-to-image-with-template/6.jpg', False], 
                 ["a hand-drawn blueprint for a time machine with the caption 'Time traveling device'", './images/text-to-image-with-template/5.jpg', False], 
-                ["a gate of garden", './images/text-to-image-with-template/6.jpg', False], 
                 ["a book called summer vibe written by diffusion model", './images/text-to-image-with-template/7.jpg', False], 
                 ["a work company", './images/text-to-image-with-template/8.jpg', False], 
                 ["a book of AI in next century written by AI robot ", './images/text-to-image-with-template/9.jpg', False], 
