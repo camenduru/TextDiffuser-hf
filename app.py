@@ -16,12 +16,12 @@ if not os.path.exists('textdiffuser-ckpt'):
         zip_ref.extractall('.')
 
 if not os.path.exists('images'):
-    os.system('wget https://layoutlm.blob.core.windows.net/textdiffuser/images.zip')
+    os.system('wget https://huggingface.co/camenduru/textdiffuser/resolve/main/images.zip')
     with zipfile.ZipFile('images.zip', 'r') as zip_ref:
         zip_ref.extractall('.')
 
 if not os.path.exists('Arial.ttf'):
-    os.system('wget https://layoutlm.blob.core.windows.net/textdiffuser/Arial.ttf')
+    os.system('wget https://huggingface.co/camenduru/textdiffuser/resolve/main/Arial.ttf')
 
     
 os.system('echo finish')
